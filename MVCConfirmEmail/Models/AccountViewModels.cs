@@ -49,9 +49,8 @@ namespace MVCConfirmEmail.Models
     public class LoginViewModel
     {
         [Required]
-        [Display(Name = "Email")]
-        [EmailAddress]
-        public string Email { get; set; }
+        [Display(Name = "Username or Email")]
+        public string Username { get; set; }
 
         [Required]
         [DataType(DataType.Password)]
@@ -64,6 +63,10 @@ namespace MVCConfirmEmail.Models
 
     public class RegisterViewModel
     {
+        [Required]
+        [StringLength(maximumLength:50,MinimumLength =3,ErrorMessage ="The {0} must be between {1} and {2} characters in lenth")]
+        public string Username { get; set; }
+
         [Required]
         [EmailAddress]
         [Display(Name = "Email")]

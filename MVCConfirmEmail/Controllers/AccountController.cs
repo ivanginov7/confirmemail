@@ -72,18 +72,25 @@ namespace MVCConfirmEmail.Controllers
             {
                 return View(model);
             }
-
-            // This doesn't count login failures towards account lockout
-            // To enable password failures to trigger account lockout, change to shouldLockout: true
-            if (!await UserManager.IsEmailConfirmedAsync((await UserManager.FindByNameAsync(model.Email)).Id))
+            string userName = model.Username;
+            ApplicationUser user = null;
+            using (var db = new ApplicationDbContext())
             {
-                Session.Abandon();
-                AuthenticationManager.SignOut();
-                ViewBag.ErrorMessage = "You have not confirmed your email. Confirm your email before logging in";
-                ViewBag.Email = model.Email;
-                return View("ResendEmailConfirmationLink");
+                user = db.Users.FirstOrDefault(u => u.Email == model.Username);
+                if (user != null) { userName = user.UserName; }
+                else { user = db.Users.FirstOrDefault(u => u.UserName == model.Username); }
             }
-            var result = await SignInManager.PasswordSignInAsync(model.Email, model.Password, model.RememberMe, shouldLockout: false);
+                // This doesn't count login failures towards account lockout
+                // To enable password failures to trigger account lockout, change to shouldLockout: true
+                if (!await UserManager.IsEmailConfirmedAsync((await UserManager.FindByNameAsync(user.UserName)).Id))
+                {
+                    Session.Abandon();
+                    AuthenticationManager.SignOut();
+                    ViewBag.ErrorMessage = "You have not confirmed your email. Confirm your email before logging in";
+                    ViewBag.Email = user.Email;
+                    return View("ResendEmailConfirmationLink");
+                }
+            var result = await SignInManager.PasswordSignInAsync(userName, model.Password, model.RememberMe, shouldLockout: false);
             
             switch (result)
             {
@@ -100,7 +107,7 @@ namespace MVCConfirmEmail.Controllers
             }
         }
 
-        
+        [AllowAnonymous]
         public async Task<ActionResult> ResendConfirmationEmail(string Email)
         {
             var user = UserManager.FindByEmail(Email);
@@ -175,7 +182,7 @@ namespace MVCConfirmEmail.Controllers
         {
             if (ModelState.IsValid)
             {
-                var user = new ApplicationUser { UserName = model.Email, Email = model.Email };
+                var user = new ApplicationUser { UserName = model.Username, Email = model.Email };
                 var result = await UserManager.CreateAsync(user, model.Password);
                 if (result.Succeeded)
                 {
@@ -228,7 +235,8 @@ namespace MVCConfirmEmail.Controllers
         {
             if (ModelState.IsValid)
             {
-                var user = await UserManager.FindByNameAsync(model.Email);
+                //var user = await UserManager.FindByNameAsync(model.Email);
+                var user = await UserManager.FindByEmailAsync(model.Email);
                 if (user == null || !(await UserManager.IsEmailConfirmedAsync(user.Id)))
                 {
                     // Don't reveal that the user does not exist or is not confirmed
@@ -274,7 +282,8 @@ namespace MVCConfirmEmail.Controllers
             {
                 return View(model);
             }
-            var user = await UserManager.FindByNameAsync(model.Email);
+            //var user = await UserManager.FindByNameAsync(model.Email);
+            var user = await UserManager.FindByEmailAsync(model.Email);
             if (user == null)
             {
                 // Don't reveal that the user does not exist
