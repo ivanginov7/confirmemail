@@ -80,16 +80,21 @@ namespace MVCConfirmEmail.Controllers
                 if (user != null) { userName = user.UserName; }
                 else { user = db.Users.FirstOrDefault(u => u.UserName == model.Username); }
             }
-                // This doesn't count login failures towards account lockout
-                // To enable password failures to trigger account lockout, change to shouldLockout: true
-                if (!await UserManager.IsEmailConfirmedAsync((await UserManager.FindByNameAsync(user.UserName)).Id))
-                {
-                    Session.Abandon();
-                    AuthenticationManager.SignOut();
-                    ViewBag.ErrorMessage = "You have not confirmed your email. Confirm your email before logging in";
-                    ViewBag.Email = user.Email;
-                    return View("ResendEmailConfirmationLink");
-                }
+            if (user == null)
+            {
+                ModelState.AddModelError("", "Username or Password are incorrect");
+                return View(model);
+            }
+            // This doesn't count login failures towards account lockout
+            // To enable password failures to trigger account lockout, change to shouldLockout: true
+            if (!await UserManager.IsEmailConfirmedAsync((await UserManager.FindByNameAsync(user.UserName)).Id))
+            {
+                Session.Abandon();
+                AuthenticationManager.SignOut();
+                ViewBag.ErrorMessage = "You have not confirmed your email. Confirm your email before logging in";
+                ViewBag.Email = user.Email;
+                return View("ResendEmailConfirmationLink");
+            }
             var result = await SignInManager.PasswordSignInAsync(userName, model.Password, model.RememberMe, shouldLockout: false);
             
             switch (result)
